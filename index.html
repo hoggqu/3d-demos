@@ -2617,15 +2617,52 @@ const skySize = [1536,512];
 const shadowSize = [1024,1536];
 const sampleType = {sampleType:"depth"};
 const floatType = {sampleType:"float"};
+const renderScales = [1,0.90,0.80,0.70];
+const fpsSampleMs = 500;
+let renderScaleIndex=0, fpsSampleStart, fpsSampleFrames=0, slowSamples=0, fastSamples=0;
+function resetFrameRateSamples() {
+  fpsSampleStart=undefined;
+  fpsSampleFrames=0;
+  slowSamples=0;
+  fastSamples=0;
+}
+function recordRenderedFrame(now) {
+  if(fpsSampleStart===undefined){
+    fpsSampleStart=now;
+    return;
+  }
+  fpsSampleFrames++;
+  const elapsed=now-fpsSampleStart;
+  if(elapsed<fpsSampleMs)return;
+  fps=1000*fpsSampleFrames/elapsed;
+  fpsSampleStart=now;
+  fpsSampleFrames=0;
+  // Count consecutive windows so a single long hitch cannot reduce resolution.
+  slowSamples=fps<45?slowSamples+1:0;
+  fastSamples=fps>=57?fastSamples+1:0;
+  if(slowSamples>=5&&renderScaleIndex<renderScales.length-1){
+    renderScaleIndex++;
+    resetFrameRateSamples();
+  }else if(fastSamples>=20&&renderScaleIndex>0){
+    renderScaleIndex--;
+    resetFrameRateSamples();
+  }
+}
+document.addEventListener("visibilitychange",resetFrameRateSamples);
 function resize() {
-  const scale = Math.min(devicePixelRatio,1.25,
+  const baseScale = Math.min(devicePixelRatio,1.25,
     Math.sqrt((1920*1080)/Math.max(1,innerWidth*innerHeight)),
     device.limits.maxTextureDimension2D/Math.max(innerWidth,innerHeight,2));
+  const scale=baseScale*renderScales[renderScaleIndex];
   const width=Math.max(2,Math.floor(innerWidth*scale)),height=Math.max(2,Math.floor(innerHeight*scale));
-  if(targets?.width===width && targets?.height===height)return;
+  if(targets?.width===width && targets?.height===height)return true;
+  // Let submitted frames release the old targets before replacing them.
+  if(queuedFrames>0)return false;
   if(targets) for(const texture of targets.textures)texture.destroy();
   canvas.width=width;canvas.height=height;
   targets = makeTargets(width,height);
+  resetFrameRateSamples();
+  return true;
 }
 let makeTargets;
 
@@ -3146,11 +3183,10 @@ function loop(now) {
   try{
     const id=requestAnimationFrame(loop);
     releaseFrame=()=>cancelAnimationFrame(id);
-    if(queuedFrames>=2)return;
+    if(document.hidden||queuedFrames>=2||!resize())return;
     const dt=lastTime?Math.min(0.08,(now-lastTime)/1000):0;
-    if(lastTime&&now>lastTime)fps=fps*0.93+1000/(now-lastTime)*0.07;
     lastTime=now;
-    update(dt);updateHud();resize();
+    update(dt);updateHud();
     const begin=performance.now(), sample=statsVisible&&now-lastStats>390;
     drawFrame(sample,frameParameters());
     encodeMs=encodeMs*0.90+(performance.now()-begin)*0.10;
@@ -3160,13 +3196,14 @@ function loop(now) {
     if(sample){
       lastStats=now;
       el("stats").textContent=[
-        "WebGPU  "+Math.round(fps)+" FPS  "+targets.width+"×"+targets.height,
+        "WebGPU  "+Math.round(fps)+" FPS  "+targets.width+"×"+targets.height+"  "+Math.round(renderScales[renderScaleIndex]*100)+"%",
         "CPU 编码与提交 "+encodeMs.toFixed(2)+" ms",
         "GPU 帧 "+(gpuMs===null?"—":gpuMs.toFixed(2)+" ms"),
         "队列提交 "+frameSubmits+" 次 / 帧",
         "B · 静态绘制包 "+(useBundles&&recordedBundleCount?"可重放 "+recordedBundleCount+" / 5":"直接编码"),
       ].join("\n");
     }
+    recordRenderedFrame(now);
   }catch(err){fail(err);}
 }
 setup().then(()=>{const id=requestAnimationFrame(loop);releaseFrame=()=>cancelAnimationFrame(id);}).catch(fail);
