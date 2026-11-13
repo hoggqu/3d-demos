@@ -2395,7 +2395,7 @@ const state = {
   pumpOn:false, pumpTime:0, pumpStarted:0, pumpStopped:0,
 };
 const keys=new Set();
-let useBundles=true, statsVisible=false;
+let useBundles=true, statsVisible=false, recordedBundleCount=0;
 let device, context, adapter, targets, frameBuffer, gpuTimestamp, activeTouch;
 let frameSubmits=0, encodeMs=0, gpuMs=null, fps=0, lastTime=0, lastStats=0, fatal=false, ready=false;
 let queuedFrames=0;
@@ -2901,20 +2901,31 @@ async function setup() {
     pass.setVertexBuffer(0,mesh.buffer);
     pass.draw(mesh.count);
   }
-  function bundle(label,pipe,mesh,lit){
-    const encoder=device.createRenderBundleEncoder({label,colorFormats:lit?["rgba16float"]:[],depthStencilFormat:"depth32float"});
-    geometryDraw(encoder,pipe,mesh,lit);
-    return encoder.finish({label});
+  async function bundle(label,pipe,mesh,lit){
+    if(typeof device.createRenderBundleEncoder!=="function")return null;
+    // WebKit can reject depth-only bundles even though the same pipeline works in a render pass.
+    device.pushErrorScope("validation");
+    let recorded,validationError;
+    try{
+      const encoder=device.createRenderBundleEncoder({label,colorFormats:lit?["rgba16float"]:[],depthStencilFormat:"depth32float"});
+      geometryDraw(encoder,pipe,mesh,lit);
+      recorded=encoder.finish({label});
+    }finally{
+      validationError=await device.popErrorScope();
+    }
+    return validationError?null:recorded;
   }
-  const staticBundles=[
+  const staticBundles=await Promise.all([
     bundle("Pump station main",mainPipe,geometry[0],true),
     bundle("Pump station reflection",reflectionPipe,geometry[0],true),
     bundle("Pump station lamp shadow",flashPipe,shadowGeometry,false),
     bundle("Pump station sun shadow",sunPipe,shadowGeometry,false),
     bundle("Pump station basin reflection",basinReflectionPipe,geometry[0],true),
-  ];
+  ]);
+  recordedBundleCount=staticBundles.filter(Boolean).length;
   function drawScene(pass,pipe,index,lit){
-    if(useBundles)pass.executeBundles([staticBundles[index]]);
+    const bundle=staticBundles[index];
+    if(useBundles&&bundle)pass.executeBundles([bundle]);
     else geometryDraw(pass,pipe,lit?geometry[0]:shadowGeometry,lit);
     for(const mesh of geometry.slice(1))geometryDraw(pass,pipe,mesh,lit);
   }
@@ -3153,7 +3164,7 @@ function loop(now) {
         "CPU 编码与提交 "+encodeMs.toFixed(2)+" ms",
         "GPU 帧 "+(gpuMs===null?"—":gpuMs.toFixed(2)+" ms"),
         "队列提交 "+frameSubmits+" 次 / 帧",
-        "B · 静态绘制包 "+(useBundles?"重放":"直接编码"),
+        "B · 静态绘制包 "+(useBundles&&recordedBundleCount?"可重放 "+recordedBundleCount+" / 5":"直接编码"),
       ].join("\n");
     }
   }catch(err){fail(err);}
