@@ -1,6 +1,15 @@
-# 潮闸
+# 3D Demos
 
-**[在线试玩《潮闸》](https://hoggqu.github.io/tidegate/)**
+- [在线试玩《潮闸》](https://hoggqu.github.io/3d-demos/) · [下载 HTML](./%E6%BD%AE%E9%97%B8.html)
+- [在线试玩《雪线》](https://hoggqu.github.io/3d-demos/snow.html) · [下载 HTML](./%E9%9B%AA%E7%BA%BF.html)
+
+使用支持 WebGPU 的浏览器打开。
+
+## 雪线
+
+在冬季松林里踏雪。雪地会随落脚逐渐压深，拔脚时带起碎雪。按 **WASD** 移动、**Shift** 跑步，拖动视角。也可以点「自动走一段」和「近看脚印」。
+
+## 潮闸
 
 《潮闸》是一个第一人称的单文件 WebGPU 游戏实验。场景设在一座昏暗的海岸泵站。启动检修池的水泵，校准反光板打开卷帘门，走到栈桥上看晨光照进机房。
 
@@ -13,7 +22,7 @@
 
 游戏使用原生 WebGPU 和 WGSL。几何、材质、海面和云都由代码生成，脚步、闸门和水泵音效由 Web Audio 合成。文件内包含全部运行代码和资源。
 
-## 模型与用量
+### 《潮闸》的模型与用量
 
 开发使用 OpenAI **GPT-6.1 Sol**（`gpt-6.1-sol`），Codex 的速度档位设为 Fast（会话日志记为 `priority`）。
 
