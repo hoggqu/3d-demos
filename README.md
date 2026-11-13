@@ -1,5 +1,7 @@
 # 潮闸
 
+**[在线试玩《潮闸》](https://hoggqu.github.io/tidegate/)**
+
 《潮闸》是一个第一人称的单文件 WebGPU 游戏实验。场景设在一座昏暗的海岸泵站。启动检修池的水泵，校准反光板打开卷帘门，走到栈桥上看晨光照进机房。
 
 下载 [潮闸.html](./%E6%BD%AE%E9%97%B8.html)，用支持 WebGPU 的桌面 Chrome 或 Edge 打开。已在 Windows 的 Chrome 中通过离线验证。
