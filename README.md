@@ -1,9 +1,29 @@
 # 3D Demos
 
+- [在线试玩《东汐雨夜》](https://hoggqu.github.io/3d-demos/dongxi.html) · [下载 HTML](./%E4%B8%9C%E6%B1%90%E9%9B%A8%E5%A4%9C.html)
 - [在线试玩《潮闸》](https://hoggqu.github.io/3d-demos/) · [下载 HTML](./%E6%BD%AE%E9%97%B8.html)
 - [在线试玩《雪线》](https://hoggqu.github.io/3d-demos/snow.html) · [下载 HTML](./%E9%9B%AA%E7%BA%BF.html)
 
 使用支持 WebGPU 的浏览器打开。
+
+## 东汐雨夜
+
+从便利店的雨棚出发，穿过霓虹映照的积水街道，走上 HOG 站的高架站台看列车驶过。按 **WASD** 移动，用**鼠标**或**方向键**观察，按 **Shift** 快走、**T** 查看渲染统计。
+
+单文件使用原生 WebGPU、WGSL 和 Web Audio。雨丝、车灯体积光、积水反射和店铺内景都在浏览器里生成。巡逻机器人的步态来自 Biu_Games 的 `Walk_Male`，动作采样直接内嵌在脚本里。
+
+### 《东汐雨夜》的模型与用量
+
+使用 Codex 和 OpenAI **GPT-6.1 Sol**（`gpt-6.1-sol`），会话记录的速度档位为 Fast（`priority`）。[OpenAI 模型文档](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
+
+| 用量 | Token |
+| --- | ---: |
+| 缓存输入 | 109,081,728 |
+| 未缓存输入 | 764,014 |
+| 输出（含推理） | 357,823 |
+| **合计** | **110,203,565** |
+
+根据 Codex 会话用量记录汇总，覆盖从雨夜街头构思到 HOG 站改名的 10 轮设计、实现和验证。《潮闸》的 iPad 修复与本次 GitHub 发布另计。输出中的 142,834 个推理 token 已包含在表中。
 
 ## 雪线
 
