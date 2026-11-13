@@ -630,6 +630,30 @@ function mesh(name, data, capacity, indices=null) {
   batches[name] = batch;
   return batch;
 }
+
+function hogLettering() {
+  const rows=[
+    "##..## .####. .####.",
+    "##..## ##..## ##..##",
+    "##..## ##..## ##....",
+    "###### ##..## ##.###",
+    "##..## ##..## ##..##",
+    "##..## ##..## ##..##",
+    "##..## .####. .####.",
+  ];
+  const data=[];
+  const cell=.013;
+  for (const [y,row] of rows.entries()) {
+    for (const [x,pixel] of Array.from(row).entries()) {
+      if (pixel!=="#") continue;
+      const left=(x-row.length/2)*cell;
+      const top=(rows.length/2-y)*cell;
+      quad(data,[left,top-cell,0],[left+cell,top-cell,0],
+        [left+cell,top,0],[left,top,0],[1,1,1]);
+    }
+  }
+  return data;
+}
 function vertex(data, p, n, c, material=0) { data.push(...p,...n,...c,material); }
 function triangle(data, a, b, c, color, material=0) {
   const n = unit(cross(sub(b,a),sub(c,a)));
@@ -997,6 +1021,7 @@ function worldScene() {
   seed=571341;
   mesh("coat",batches.ball.data,40);
   mesh("gear",batches.box.data,30);
+  mesh("hog",hogLettering(),1);
   mesh("limb",batches.ball.data,24);
   const placePine = (x,z,h,yaw) => {
     const tint=.72+random()*.29;
@@ -1647,6 +1672,7 @@ function movePlayer(dt,time) {
 }
 
 const coat = rgb("9a5038"), coatDark = rgb("72402f"), leather = rgb("392f2d");
+const badgeColor=rgb("43332a"), hogColor=rgb("f5d79b");
 const pants = rgb("3c4a54"), knit = rgb("bba28a"), pack = rgb("5f4935");
 const skin = rgb("c59577"), gloves = rgb("553f34"), boot = rgb("382d29");
 const sole = rgb("252831"), scarf = rgb("743737"), buckle = rgb("bd9e70");
@@ -1696,7 +1722,7 @@ function solveLeg(hip,target,unweight,yaw) {
   return {knee,ankle};
 }
 function character(dt) {
-  for (const name of ["coat","gear","limb"]) batches[name].instances.length=0;
+  for (const name of ["coat","gear","limb","hog"]) batches[name].instances.length=0;
   const wool=batches.coat, details=batches.gear, limbs=batches.limb;
   const yaw=player.yaw;
   const pose=player.pose;
@@ -1730,7 +1756,8 @@ function character(dt) {
   placed(details,upper(.108,.055,-.131),[.076,.245,.054],yaw,scarf,0,-.15);
   coatPart(upper(0,-.125,-.211),[.384,.427,.242],pack);
   coatPart(upper(0,.063,-.226),[.383,.116,.245],rgb("887053"));
-  placed(details,upper(0,-.13,-.33),[.162,.138,.015],yaw,rgb("927552"));
+  transform(details,upper(0,-.13,-.332),scale(right,.292),scale(torsoY,.124),scale(torsoZ,.016),badgeColor);
+  transform(batches.hog,upper(0,-.13,-.341),right,torsoY,torsoZ,hogColor);
   for (const [i,foot] of player.feet.entries()) {
     const name=i===0?"right":"left";
     const sign=foot.sign;
@@ -1849,7 +1876,7 @@ async function setup() {
   worldScene();
   mesh("spray",ellipsoidMesh(6,4),256);
   for (const [name,b] of Object.entries(batches)) {
-    b.dynamic=["coat","gear","limb","spray"].includes(name);
+    b.dynamic=["coat","gear","limb","hog","spray"].includes(name);
     b.vertex=staticBuffer(b.data,usage.VERTEX);
     if (b.indices) b.index=staticBuffer(b.indices,usage.INDEX);
     b.count=b.indices?.length ?? b.data.length/10;
